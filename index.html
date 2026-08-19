@@ -759,6 +759,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   .modal .box h2{margin:0 0 5px;font-size:17px;font-weight:800;color:var(--navy);}
   .modal .box .erro{color:var(--danger);font-size:12.5px;margin-top:9px;display:none;font-weight:600;}
   .modal .box .erro.show{display:block;}
+  .modal .box{max-height:88vh;overflow-y:auto;}
+  /* etiqueta de situação da calibração */
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:800;
+    letter-spacing:.2px;white-space:nowrap;border:1px solid transparent;}
+  .pill.ok{background:var(--ok-l);color:var(--ok);border-color:#bfe4d6;}
+  .pill.vencendo{background:var(--warn-l);color:var(--warn);border-color:#e8d59a;}
+  .pill.vencido{background:var(--danger-2);color:var(--danger);border-color:#eccfcb;}
+  .pill.sem{background:#eef2f3;color:var(--text-mut);border-color:var(--border);}
+  .histlinha{border-left:3px solid var(--teal);padding:7px 0 7px 11px;margin-bottom:9px;font-size:12.5px;}
+  .histlinha b{color:var(--navy);}
+  .histlinha .quando{color:var(--text-mut);font-size:11px;}
+
   @media(min-width:640px){
     .modal{align-items:center;padding:18px;}
     .modal .box{border-radius:var(--radius);animation:none;}
@@ -955,7 +967,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <button data-tab="novo" class="active"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="rot">Lançar</span></button>
     <button data-tab="registros"><span class="ico"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="rot">Registros</span></button>
     <button data-tab="calendario"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="rot">Análise</span></button>
-    <button data-tab="exportar"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span><span class="rot">Exportar</span></button>
+    <button data-tab="equipamentos"><span class="ico"><svg viewBox="0 0 24 24"><path d="M15.2 4.8a4.5 4.5 0 00-6 6L4 16v4h4l5.2-5.2a4.5 4.5 0 006-6l-2.9 2.9-2.5-.6-.6-2.5 2.9-2.9z"/></svg></span><span class="rot">Equipam.</span></button>
     <button data-tab="config"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1.03 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 008.4 19.3a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.56-1.03H2a2 2 0 110-4h.09A1.7 1.7 0 003.7 8.4a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34H8.4A1.7 1.7 0 009.43 2.5V2a2 2 0 114 0v.09a1.7 1.7 0 001.03 1.56 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87v.07A1.7 1.7 0 0021.5 9.6H22a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1.4z"/></svg></span><span class="rot">Config.</span></button>
   </nav>
 
@@ -1195,9 +1207,60 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     </div>
   </section>
 
-  <!-- ===== TAB: EXPORTAR ===== -->
-  <section id="tab-exportar" style="display:none;">
+  <!-- ===== TAB: EQUIPAMENTOS ===== -->
+  <section id="tab-equipamentos" style="display:none;">
+    <div class="kpis" id="eqKpis"></div>
+
     <div class="card">
+      <h2>Equipamentos do laboratório</h2>
+      <div class="filters">
+        <select id="eqFiltroObra"><option value="">Todas as obras</option></select>
+        <select id="eqFiltroSituacao">
+          <option value="">Calibração: todas</option>
+          <option value="vencido">Vencidos</option>
+          <option value="vencendo">Vencem em até 30 dias</option>
+          <option value="ok">Em dia</option>
+          <option value="sem">Sem data de calibração</option>
+        </select>
+        <input id="eqBusca" placeholder="Buscar por descrição ou certificado...">
+      </div>
+      <div class="actions" style="margin:0 0 12px;">
+        <button class="btn" onclick="abrirEquip()">+ Cadastrar equipamento</button>
+      </div>
+      <div class="tablewrap">
+        <table id="tabelaEquip">
+          <thead><tr><th>Calibração</th><th>Equipamento</th><th>Onde está</th><th>Certificado</th>
+            <th>Calibrado em</th><th>Empresa</th><th>Validade</th><th>Próxima</th><th>Obs.</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint">A situação da calibração é calculada sozinha a partir da próxima data — ninguém
+      precisa atualizar na mão. Use <b>Mover</b> para registrar a ida do equipamento para outra obra;
+      o app guarda o histórico de onde ele já esteve.</p>
+    </div>
+  </section>
+
+  <!-- ===== TAB: CONFIG ===== -->
+  <section id="tab-config" style="display:none;">
+    <div class="card">
+      <h2>Sincronização automática (Google Planilhas)</h2>
+      <p class="hint">Cole aqui a URL do Web App do Google Apps Script. Uma vez configurado, todo
+      lançamento novo é enviado sozinho assim que o aparelho tiver internet — e o app também
+      <b>baixa os lançamentos dos outros aparelhos</b>, para que Registros, Calendário e o painel
+      mostrem a obra inteira, não só este celular. O download acontece ao abrir o app e ao entrar nas
+      abas Registros e Calendário.</p>
+      <label>URL do Web App (Apps Script)</label>
+      <input id="cfg_url" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+      <div class="actions">
+        <button class="btn" onclick="salvarConfigSync()">Salvar URL</button>
+        <button class="btn secondary" onclick="sincronizarPendentes(true)">Enviar pendentes</button>
+        <button class="btn secondary" onclick="baixarDaPlanilha(true)">Baixar lançamentos de todos</button>
+      </div>
+      <div class="hint" id="cfgStatus"></div>
+      <div class="hint" id="cfgEspaco"></div>
+    </div>
+    <div id="blocoGestor" style="display:none;">
+<div class="card">
       <h2>Exportar planilha (.xlsx)</h2>
       <p class="hint">Gera 1 aba por tipo de ensaio, com as colunas no padrão usado no Resumo dos Ensaios Laboratoriais. Pode filtrar por medição antes de exportar.</p>
       <label>Medição (deixe em branco para exportar tudo)</label>
@@ -1223,34 +1286,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <button class="btn danger" onclick="limparTudo()">Apagar todos os registros deste dispositivo</button>
       </div>
     </div>
-  </section>
-
-  <!-- ===== TAB: CONFIG ===== -->
-  <section id="tab-config" style="display:none;">
-    <div class="card">
-      <h2>Sincronização automática (Google Planilhas)</h2>
-      <p class="hint">Cole aqui a URL do Web App do Google Apps Script. Uma vez configurado, todo
-      lançamento novo é enviado sozinho assim que o aparelho tiver internet — e o app também
-      <b>baixa os lançamentos dos outros aparelhos</b>, para que Registros, Calendário e o painel
-      mostrem a obra inteira, não só este celular. O download acontece ao abrir o app e ao entrar nas
-      abas Registros e Calendário.</p>
-      <label>URL do Web App (Apps Script)</label>
-      <input id="cfg_url" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
-      <div class="actions">
-        <button class="btn" onclick="salvarConfigSync()">Salvar URL</button>
-        <button class="btn secondary" onclick="sincronizarPendentes(true)">Enviar pendentes</button>
-        <button class="btn secondary" onclick="baixarDaPlanilha(true)">Baixar lançamentos de todos</button>
-      </div>
-      <div class="hint" id="cfgStatus"></div>
-      <div class="hint" id="cfgEspaco"></div>
     </div>
+
     <div class="card">
       <h2>Sobre este app</h2>
       <p style="font-size:13px;line-height:1.6;color:var(--text-2)">
         Ferramenta de apoio para lançamento em campo/laboratório dos ensaios de controle tecnológico
         (densidade in situ, compactação, empolamento e equivalente de areia, teste de carga, viga Benkelman,
         taxas de brita e de pintura, concreto e acompanhamento de serviços). Os dados ficam salvos localmente neste navegador/dispositivo — exporte
-        regularmente (aba Exportar) para não perder informação e para consolidar os lançamentos de vários
+        regularmente (em Config., no acesso gestor) para não perder informação e para consolidar os lançamentos de vários
         dispositivos em um só arquivo.
       </p>
       <p style="font-size:13px;line-height:1.6;color:var(--text-2)">
@@ -1259,6 +1303,74 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       </p>
     </div>
   </section>
+</div>
+
+<!-- ===== MODAL: cadastro / edição de equipamento ===== -->
+<div class="modal" id="modalEquip">
+  <div class="box">
+    <h2 id="equipTitulo">Cadastrar equipamento</h2>
+    <label>Descrição do equipamento</label>
+    <input id="eq_descricao" placeholder="ex: Balança 20 kg — Marte AD5000">
+    <div class="grid2">
+      <div><label>Nº do certificado</label><input id="eq_certificado" placeholder="ex: 1234/2026"></div>
+      <div><label>Empresa que calibrou</label><input id="eq_empresa" placeholder="ex: Metrolab"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Data da calibração</label><input id="eq_dataCal" type="date"></div>
+      <div><label>Validade</label>
+        <select id="eq_validade">
+          <option value="6">6 meses</option>
+          <option value="12" selected>1 ano</option>
+          <option value="24">2 anos</option>
+          <option value="36">3 anos</option>
+          <option value="60">5 anos</option>
+          <option value="0">Outra — informo a data</option>
+        </select>
+      </div>
+    </div>
+    <label>Próxima calibração</label>
+    <input id="eq_proxima" type="date">
+    <div class="hint">Calculada pela data + validade. Pode corrigir à mão se o certificado trouxer outra data.</div>
+    <label>Onde está (obra)</label>
+    <select id="eq_obra"></select>
+    <label>Observações</label>
+    <textarea id="eq_obs" placeholder="Opcional — nº de série, estado do equipamento, etc."></textarea>
+    <div class="erro" id="eqErro">Preencha a descrição do equipamento.</div>
+    <div class="actions">
+      <button class="btn" onclick="salvarEquip()">Salvar</button>
+      <button class="btn ghost" onclick="fecharModal('modalEquip')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: mover equipamento de obra ===== -->
+<div class="modal" id="modalMover">
+  <div class="box">
+    <h2>Mover equipamento</h2>
+    <p class="hint" id="moverInfo"></p>
+    <label>Obra de destino</label>
+    <select id="mv_obra"></select>
+    <div class="grid2">
+      <div><label>Data da movimentação</label><input id="mv_data" type="date"></div>
+      <div><label>Responsável</label><input id="mv_quem" placeholder="quem levou"></div>
+    </div>
+    <label>Observação</label>
+    <input id="mv_obs" placeholder="Opcional">
+    <div class="erro" id="mvErro">Escolha uma obra diferente da atual.</div>
+    <div class="actions">
+      <button class="btn" onclick="confirmarMover()">Mover equipamento</button>
+      <button class="btn ghost" onclick="fecharModal('modalMover')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: histórico de movimentação ===== -->
+<div class="modal" id="modalHist">
+  <div class="box">
+    <h2>Histórico do equipamento</h2>
+    <div id="histLista"></div>
+    <div class="actions"><button class="btn ghost" onclick="fecharModal('modalHist')">Fechar</button></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1719,7 +1831,7 @@ function sairDoGestor(){
 
 /* Abas que só o gestor abre. Config. fica liberada: é lá que cada laboratorista
    cola a URL da planilha que o gestor manda. */
-const ABAS_RESTRITAS = ["calendario","exportar"];
+const ABAS_RESTRITAS = ["calendario"];
 
 function aplicarPerfil(){
   const gestor = ehGestor();
@@ -1741,6 +1853,9 @@ function aplicarPerfil(){
     });
     if(abaAberta) irParaAba("novo");
   }
+  const bloco = document.getElementById("blocoGestor");
+  if(bloco) bloco.style.display = gestor ? "" : "none";
+
   if(document.getElementById("tab-registros").style.display!=="none") renderRegistros();
 }
 
@@ -1846,6 +1961,8 @@ async function sincronizarPendentes(manual){
     if(manual) toast("Sem internet no momento — vai sincronizar sozinho quando voltar.");
     return;
   }
+  await enviarEquipamentos();     // o parque de equipamentos sobe junto
+
   const pendentes = registros.filter(r=>!r.sincronizado);
   if(pendentes.length===0){
     if(manual) toast("Tudo já sincronizado ✓");
@@ -1958,12 +2075,15 @@ function aplicarRegistrosRemotos(resp, manual){
     }
   });
 
+  aplicarEquipamentosRemotos(resp.equipamentos);
+
   localStorage.setItem(ULTIMO_DOWNLOAD_KEY, new Date().toISOString());
   salvarStorage();
   atualizarBarraConexao();
   atualizarEspaco();
   if(document.getElementById("tab-registros").style.display!=="none") renderRegistros();
   if(document.getElementById("tab-calendario").style.display!=="none") renderCalendario();
+  if(document.getElementById("tab-equipamentos").style.display!=="none") renderEquipamentos();
 
   const resumo = `${registros.length} lançamento(s) neste aparelho · ${novos} novo(s) · ${atualizados} atualizado(s)` +
                  (ignorados ? ` · ${ignorados} de tipo desconhecido ignorado(s)` : "");
@@ -1996,7 +2116,8 @@ function atualizarBarraConexao(){
   const online = navigator.onLine;
   dot.className = "dot " + (online ? "online" : "offline");
   label.textContent = online ? "Online" : "Offline";
-  const pendentes = registros.filter(r=>!r.sincronizado).length;
+  let pendentes = registros.filter(r=>!r.sincronizado).length;
+  try{ pendentes += equipamentos.filter(e=>!e.sincronizado).length; }catch(e){}
   pend.textContent = pendentes + " pendente(s)";
   pend.className = "syncbadge " + (pendentes>0 ? "pend" : "ok");
 }
@@ -2019,6 +2140,7 @@ document.querySelectorAll("nav button").forEach(btn=>{
     document.getElementById("tab-"+btn.dataset.tab).style.display="block";
     if(btn.dataset.tab==="registros"){ renderRegistros(); baixarSeVelho(0.5); }
     if(btn.dataset.tab==="calendario"){ renderCalendario(); baixarSeVelho(0.5); }
+    if(btn.dataset.tab==="equipamentos"){ renderEquipamentos(); baixarSeVelho(0.5); }
   });
 });
 
@@ -3678,6 +3800,339 @@ const obraLabelEl = document.getElementById("obraLabel");
 function atualizarObraLabel(){ obraLabelEl.textContent = selRodovia.value.split(" — ")[0]; }
 atualizarObraLabel();
 selRodovia.addEventListener("change", atualizarObraLabel);
+/* ===================== EQUIPAMENTOS DO LABORATÓRIO =====================
+   Cadastro, calibração e localização dos equipamentos. A situação (em dia,
+   vencendo, vencido) NÃO é digitada: sai da data da próxima calibração, para
+   não existir equipamento marcado como "OK" com certificado vencido há meses. */
+const EQUIP_KEY = "sgq_equipamentos_v1";
+let equipamentos = [];
+let equipEditando = null;   /* id do equipamento em edição; null = cadastro novo */
+let equipMovendo  = null;   /* id do equipamento sendo movido de obra */
+
+const VALIDADES = { "6":"6 meses", "12":"1 ano", "24":"2 anos", "36":"3 anos", "60":"5 anos", "0":"—" };
+
+function carregarEquipamentos(){
+  try{ equipamentos = JSON.parse(localStorage.getItem(EQUIP_KEY) || "[]"); }
+  catch(e){ equipamentos = []; }
+  if(!Array.isArray(equipamentos)) equipamentos = [];
+}
+function salvarEquipamentos(){
+  try{ localStorage.setItem(EQUIP_KEY, JSON.stringify(equipamentos)); }
+  catch(e){ toast("Sem espaço no aparelho para salvar."); }
+}
+
+/* soma meses a uma data ISO, sem estourar para o mês seguinte (31/01 + 1 mês = 28/02) */
+function somaMeses(iso, meses){
+  const m = Number(meses);
+  if(!iso || !m) return "";
+  const [a, mes, d] = iso.split("-").map(Number);
+  const dt = new Date(a, mes - 1 + m, d);
+  if(dt.getDate() !== d) dt.setDate(0);
+  return isoDe(dt);
+}
+
+function situacaoEquip(e){
+  if(!e.proximaCalibracao) return { chave:"sem", curto:"Sem data", texto:"Sem data de calibração", dias:null };
+  const hoje = new Date(hojeISO() + "T00:00:00");
+  const alvo = new Date(e.proximaCalibracao + "T00:00:00");
+  const dias = Math.round((alvo - hoje) / 86400000);
+  if(dias < 0)   return { chave:"vencido",  curto:"Vencido", texto:"Vencido há " + (-dias) + " dia(s)", dias };
+  if(dias <= 30) return { chave:"vencendo", curto:"Vence em " + dias + "d", texto:"Vence em " + dias + " dia(s)", dias };
+  return { chave:"ok", curto:"Em dia", texto:"Em dia — faltam " + dias + " dia(s)", dias };
+}
+
+/* ---------- modais ---------- */
+function abrirModal(id){ document.getElementById(id).classList.add("show"); }
+function fecharModal(id){ document.getElementById(id).classList.remove("show"); }
+
+function abrirEquip(id){
+  equipEditando = id || null;
+  const e = id ? equipamentos.find(x => x.id === id) : null;
+  const selObra = document.getElementById("eq_obra");
+  selObra.innerHTML = "";
+  popularSelectRodovias(selObra);
+
+  document.getElementById("equipTitulo").textContent = e ? "Editar equipamento" : "Cadastrar equipamento";
+  document.getElementById("eq_descricao").value   = e ? (e.descricao || "") : "";
+  document.getElementById("eq_certificado").value = e ? (e.certificado || "") : "";
+  document.getElementById("eq_empresa").value     = e ? (e.empresa || "") : "";
+  document.getElementById("eq_dataCal").value     = e ? (e.dataCalibracao || "") : "";
+  document.getElementById("eq_validade").value    = e ? String(e.validadeMeses != null ? e.validadeMeses : 12) : "12";
+  document.getElementById("eq_proxima").value     = e ? (e.proximaCalibracao || "") : "";
+  document.getElementById("eq_obs").value         = e ? (e.obs || "") : "";
+  selObra.value = e ? (e.obra || "") : (document.getElementById("f_rodovia").value || "");
+  document.getElementById("eqErro").classList.remove("show");
+  abrirModal("modalEquip");
+}
+
+/* a próxima calibração se recalcula sozinha ao mexer na data ou na validade */
+function recalcProxima(){
+  const validade = document.getElementById("eq_validade").value;
+  const data = document.getElementById("eq_dataCal").value;
+  if(!Number(validade) || !data) return;         // validade "outra": a data é digitada
+  document.getElementById("eq_proxima").value = somaMeses(data, validade);
+}
+
+function salvarEquip(){
+  const desc = document.getElementById("eq_descricao").value.trim();
+  if(!desc){ document.getElementById("eqErro").classList.add("show"); return; }
+
+  const dados = {
+    descricao:  desc,
+    certificado: document.getElementById("eq_certificado").value.trim(),
+    empresa:     document.getElementById("eq_empresa").value.trim(),
+    dataCalibracao: document.getElementById("eq_dataCal").value,
+    validadeMeses:  Number(document.getElementById("eq_validade").value),
+    proximaCalibracao: document.getElementById("eq_proxima").value,
+    obra: document.getElementById("eq_obra").value,
+    obs:  document.getElementById("eq_obs").value.trim(),
+    atualizadoEm: new Date().toISOString()
+  };
+
+  if(equipEditando){
+    const e = equipamentos.find(x => x.id === equipEditando);
+    if(!e){ toast("Equipamento não encontrado."); return; }
+    const obraAntiga = e.obra;
+    Object.assign(e, dados);
+    e.sincronizado = false;
+    /* trocou a obra pelo formulário? entra no histórico do mesmo jeito */
+    if(obraAntiga && obraAntiga !== e.obra){
+      e.historico = e.historico || [];
+      e.historico.push({ de: obraAntiga, para: e.obra, data: hojeISO(), quem: "", obs: "alterado no cadastro" });
+    }
+    toast("Equipamento atualizado ✓");
+  } else {
+    equipamentos.push(Object.assign({
+      id: "eq" + Date.now() + Math.random().toString(36).slice(2, 7),
+      criadoEm: new Date().toISOString(),
+      historico: [],
+      sincronizado: false
+    }, dados));
+    toast("Equipamento cadastrado ✓");
+  }
+  salvarEquipamentos();
+  fecharModal("modalEquip");
+  renderEquipamentos();
+  enviarEquipamentos();
+}
+
+function excluirEquip(id){
+  if(!ehGestor()){ toast("Somente o acesso gestor pode excluir equipamentos."); return; }
+  const e = equipamentos.find(x => x.id === id);
+  if(!e) return;
+  if(!confirm('Excluir "' + e.descricao + '" da lista de equipamentos?')) return;
+
+  if(getSyncUrl()){
+    /* com planilha configurada a exclusão precisa viajar: o item vira uma marca de
+       excluído, some da lista e, quando sobe, o servidor apaga a linha. */
+    e.excluido = true;
+    e.sincronizado = false;
+    e.atualizadoEm = new Date().toISOString();
+    enviarEquipamentos();
+  } else {
+    equipamentos = equipamentos.filter(x => x.id !== id);
+  }
+  salvarEquipamentos();
+  renderEquipamentos();
+  toast("Equipamento excluído.");
+}
+
+/* ---------- sincronização com a planilha ---------- */
+function enviarEquipamentos(){
+  const url = getSyncUrl();
+  if(!url || !navigator.onLine) return Promise.resolve(false);
+  const itens = equipamentos.filter(e => !e.sincronizado);
+  if(!itens.length) return Promise.resolve(false);
+
+  return fetch(url, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      acao: "equipamentos",
+      itens: itens.map(e => ({
+        id: e.id, descricao: e.descricao, certificado: e.certificado, empresa: e.empresa,
+        dataCalibracao: e.dataCalibracao, validadeMeses: e.validadeMeses,
+        proximaCalibracao: e.proximaCalibracao, obra: e.obra, obs: e.obs,
+        atualizadoEm: e.atualizadoEm, historico: e.historico || [], excluido: !!e.excluido
+      }))
+    })
+  }).then(() => {
+    itens.forEach(e => { e.sincronizado = true; });
+    salvarEquipamentos();
+    atualizarBarraConexao();
+    return true;
+  }).catch(() => false);
+}
+
+/* Junta o que veio da planilha. Alteração local ainda não enviada sempre manda;
+   fora isso vence a versão mais recente (comparação pelo carimbo de atualização). */
+function aplicarEquipamentosRemotos(lista){
+  if(!Array.isArray(lista)) return;
+  const porId = {};
+  equipamentos.forEach(e => { porId[e.id] = e; });
+  const naPlanilha = {};
+
+  lista.forEach(re => {
+    if(!re || !re.id) return;
+    naPlanilha[re.id] = true;
+    const local = porId[re.id];
+    if(!local){
+      re.sincronizado = true;
+      equipamentos.push(re);
+      return;
+    }
+    if(!local.sincronizado) return;                       // pendência local tem prioridade
+    if(String(re.atualizadoEm || "") >= String(local.atualizadoEm || "")){
+      Object.assign(local, re, { sincronizado: true, excluido: false });
+    }
+  });
+
+  /* sumiu da planilha e aqui já estava sincronizado = alguém excluiu em outro aparelho */
+  equipamentos = equipamentos.filter(e => naPlanilha[e.id] || !e.sincronizado);
+  salvarEquipamentos();
+}
+
+/* ---------- mover de obra ---------- */
+function abrirMover(id){
+  const e = equipamentos.find(x => x.id === id);
+  if(!e) return;
+  equipMovendo = id;
+  const sel = document.getElementById("mv_obra");
+  sel.innerHTML = "";
+  popularSelectRodovias(sel);
+  sel.value = e.obra || "";
+  document.getElementById("moverInfo").innerHTML =
+    "<b>" + esc(e.descricao) + "</b><br>Hoje está em: " + esc(e.obra || "obra não informada");
+  document.getElementById("mv_data").value = hojeISO();
+  document.getElementById("mv_quem").value = document.getElementById("f_operador").value || "";
+  document.getElementById("mv_obs").value = "";
+  document.getElementById("mvErro").classList.remove("show");
+  abrirModal("modalMover");
+}
+
+function confirmarMover(){
+  const e = equipamentos.find(x => x.id === equipMovendo);
+  if(!e){ fecharModal("modalMover"); return; }
+  const destino = document.getElementById("mv_obra").value;
+  if(!destino || destino === e.obra){ document.getElementById("mvErro").classList.add("show"); return; }
+
+  e.historico = e.historico || [];
+  e.historico.push({
+    de: e.obra || "",
+    para: destino,
+    data: document.getElementById("mv_data").value || hojeISO(),
+    quem: document.getElementById("mv_quem").value.trim(),
+    obs:  document.getElementById("mv_obs").value.trim()
+  });
+  e.obra = destino;
+  e.atualizadoEm = new Date().toISOString();
+  e.sincronizado = false;
+  salvarEquipamentos();
+  fecharModal("modalMover");
+  renderEquipamentos();
+  enviarEquipamentos();
+  toast("Equipamento movido para " + codigoObra(destino) + " ✓");
+}
+
+function verHistorico(id){
+  const e = equipamentos.find(x => x.id === id);
+  if(!e) return;
+  const h = (e.historico || []).slice().reverse();
+  document.getElementById("histLista").innerHTML =
+    '<p class="hint" style="margin-bottom:12px;"><b>' + esc(e.descricao) + '</b><br>Está em: ' +
+    esc(e.obra || "obra não informada") + '</p>' +
+    (h.length
+      ? h.map(m => '<div class="histlinha"><b>' + esc(codigoObra(m.de) || "—") + ' → ' +
+          esc(codigoObra(m.para)) + '</b>' +
+          '<div class="quando">' + dataBR(m.data) + (m.quem ? " · " + esc(m.quem) : "") + '</div>' +
+          (m.obs ? '<div style="color:var(--text-2)">' + esc(m.obs) + '</div>' : '') + '</div>').join("")
+      : '<div class="empty">Este equipamento nunca foi movido.</div>');
+  abrirModal("modalHist");
+}
+
+/* ---------- lista e indicadores ---------- */
+function equipFiltrados(){
+  const obra = document.getElementById("eqFiltroObra").value;
+  const sit  = document.getElementById("eqFiltroSituacao").value;
+  const busca = (document.getElementById("eqBusca").value || "").toLowerCase().trim();
+  return equipamentos.filter(e => {
+    if(e.excluido) return false;               // marca de exclusão esperando subir
+    if(obra && e.obra !== obra) return false;
+    if(sit && situacaoEquip(e).chave !== sit) return false;
+    if(busca){
+      const alvo = [e.descricao, e.certificado, e.empresa, e.obs].join(" ").toLowerCase();
+      if(alvo.indexOf(busca) < 0) return false;
+    }
+    return true;
+  });
+}
+
+function renderEquipamentos(){
+  popularSelectRodovias(document.getElementById("eqFiltroObra"));
+  const lista = equipFiltrados();
+
+  /* indicadores sempre sobre o mesmo recorte da lista */
+  const conta = { ok:0, vencendo:0, vencido:0, sem:0 };
+  lista.forEach(e => conta[situacaoEquip(e).chave]++);
+  document.getElementById("eqKpis").innerHTML = [
+    [lista.length, "Equipamentos", "total"],
+    [conta.ok, "Em dia", "ok"],
+    [conta.vencendo, "Vencem em 30 dias", "pend"],
+    [conta.vencido + conta.sem, "Vencidos ou sem data", "nao"]
+  ].map(([v,k,c]) => '<div class="kpi ' + c + '"><div class="v">' + v + '</div><div class="k">' + esc(k) + '</div></div>').join("");
+
+  /* o que vence primeiro aparece primeiro — é o que precisa de ação */
+  lista.sort((a,b) => {
+    const da = situacaoEquip(a).dias, db = situacaoEquip(b).dias;
+    if(da === null) return 1;
+    if(db === null) return -1;
+    return da - db;
+  });
+
+  const tb = document.querySelector("#tabelaEquip tbody");
+  if(!lista.length){
+    tb.innerHTML = '<tr><td colspan="10"><div class="empty">' +
+      (equipamentos.length ? "Nenhum equipamento neste filtro." : "Nenhum equipamento cadastrado ainda.") +
+      '</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = lista.map(e => {
+    const s = situacaoEquip(e);
+    const nHist = (e.historico || []).length;
+    return '<tr>' +
+      '<td title="' + esc(s.texto) + '"><span class="pill ' + s.chave + '">' + esc(s.curto) + '</span></td>' +
+      '<td>' + esc(e.descricao) + '</td>' +
+      '<td title="' + esc(e.obra || "") + '">' + esc(codigoObra(e.obra) || "—") +
+        (nHist ? ' <button class="pill sem" style="cursor:pointer;border:none;font-family:inherit;" title="Ver histórico" onclick="verHistorico(\'' + e.id + '\')">' + nHist + 'x</button>' : '') + '</td>' +
+      '<td>' + (esc(e.certificado) || "-") + '</td>' +
+      '<td>' + (e.dataCalibracao ? dataBR(e.dataCalibracao) : "-") + '</td>' +
+      '<td>' + (esc(e.empresa) || "-") + '</td>' +
+      '<td>' + (VALIDADES[String(e.validadeMeses)] || "—") + '</td>' +
+      '<td>' + (e.proximaCalibracao ? dataBR(e.proximaCalibracao) : "-") + '</td>' +
+      '<td>' + (esc(e.obs) || "-") + '</td>' +
+      '<td class="row-actions">' +
+        '<button onclick="abrirMover(\'' + e.id + '\')" title="Mover para outra obra">Mover</button>' +
+        '<button onclick="abrirEquip(\'' + e.id + '\')" title="Editar">Editar</button>' +
+        (ehGestor() ? '<button onclick="excluirEquip(\'' + e.id + '\')" title="Excluir">✕</button>' : '') +
+      '</td></tr>';
+  }).join("");
+}
+
+["eqFiltroObra","eqFiltroSituacao"].forEach(id =>
+  document.getElementById(id).addEventListener("change", renderEquipamentos));
+document.getElementById("eqBusca").addEventListener("input", renderEquipamentos);
+document.getElementById("eq_dataCal").addEventListener("change", recalcProxima);
+document.getElementById("eq_validade").addEventListener("change", recalcProxima);
+
+/* Esc fecha qualquer um dos modais de equipamento */
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  ["modalEquip","modalMover","modalHist"].forEach(fecharModal);
+});
+
+carregarEquipamentos();
+
 /* clona a logo do cabeçalho para dentro da tela de entrada (sem duplicar a imagem) */
 (function(){
   const orig = document.querySelector("header .logochip img");
