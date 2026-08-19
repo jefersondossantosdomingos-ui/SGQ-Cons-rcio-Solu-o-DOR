@@ -3268,7 +3268,7 @@ function montarFolhasEquip(lista, recorte){
             + `<td class="num">${VALIDADES[String(e.validadeMeses)] || "—"}</td>`
             + `<td class="num">${e.proximaCalibracao ? dataBR(e.proximaCalibracao) : "-"}</td>`
             + `<td class="num"${destaque}>${esc(st.curto)}</td>`
-            + `<td class="num">${esc(codigoObra(e.obra)) || "-"}</td>`
+            + `<td>${esc(e.obra) || "-"}</td>`
             + `<td>${esc(e.obs) || ""}</td>`
             + '</tr>';
     });
