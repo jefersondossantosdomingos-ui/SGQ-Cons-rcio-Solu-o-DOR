@@ -1214,7 +1214,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="card">
       <h2>Equipamentos do laboratório</h2>
       <div class="filters">
-        <select id="eqFiltroObra"><option value="">Todas as obras</option></select>
+        <select id="eqFiltroObra"><option value="">Todos os locais</option></select>
         <select id="eqFiltroSituacao">
           <option value="">Calibração: todas</option>
           <option value="vencido">Vencidos</option>
@@ -1226,6 +1226,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       </div>
       <div class="actions" style="margin:0 0 12px;">
         <button class="btn" onclick="abrirEquip()">+ Cadastrar equipamento</button>
+        <button class="btn secondary" onclick="imprimirEquipamentos()">Gerar PDF da lista</button>
       </div>
       <div class="tablewrap">
         <table id="tabelaEquip">
@@ -1331,7 +1332,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <label>Próxima calibração</label>
     <input id="eq_proxima" type="date">
     <div class="hint">Calculada pela data + validade. Pode corrigir à mão se o certificado trouxer outra data.</div>
-    <label>Onde está (obra)</label>
+    <label>Onde está</label>
     <select id="eq_obra"></select>
     <label>Observações</label>
     <textarea id="eq_obs" placeholder="Opcional — nº de série, estado do equipamento, etc."></textarea>
@@ -1348,7 +1349,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <div class="box">
     <h2>Mover equipamento</h2>
     <p class="hint" id="moverInfo"></p>
-    <label>Obra de destino</label>
+    <label>Destino (obra ou estoque)</label>
     <select id="mv_obra"></select>
     <div class="grid2">
       <div><label>Data da movimentação</label><input id="mv_data" type="date"></div>
@@ -1356,7 +1357,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     </div>
     <label>Observação</label>
     <input id="mv_obs" placeholder="Opcional">
-    <div class="erro" id="mvErro">Escolha uma obra diferente da atual.</div>
+    <div class="erro" id="mvErro">Escolha um local diferente do atual.</div>
     <div class="actions">
       <button class="btn" onclick="confirmarMover()">Mover equipamento</button>
       <button class="btn ghost" onclick="fecharModal('modalMover')">Cancelar</button>
@@ -3213,6 +3214,113 @@ function montarFolha(r){
   return html;
 }
 
+/* ---------- folha da lista de equipamentos ----------
+   A lista é quebrada em páginas: uma folha só com 60 linhas sairia ilegível,
+   porque o PDF encaixa cada folha inteira dentro de uma página A4. */
+const EQUIP_POR_PAGINA = 20;
+
+function montarFolhasEquip(lista, recorte){
+  const paginas = [];
+  for(let i = 0; i < lista.length; i += EQUIP_POR_PAGINA){
+    paginas.push(lista.slice(i, i + EQUIP_POR_PAGINA));
+  }
+  if(!paginas.length) paginas.push([]);
+
+  const conta = { ok:0, vencendo:0, vencido:0, sem:0 };
+  lista.forEach(e => conta[situacaoEquip(e).chave]++);
+
+  return paginas.map((pagina, iPag) => {
+    let html = '<div class="folha paisagem"><div class="quadro">';
+    html += '<div class="topo">';
+    html += `<div class="logo"><img src="${LOGO_B64}" alt=""></div>`;
+    html += '<div class="tit"><h1>Controle de equipamentos do laboratório</h1>'
+          + '<div class="sub2">Situação de calibração e localização por obra ou estoque</div>'
+          + `<div class="met">Página ${iPag+1} de ${paginas.length} · ${lista.length} equipamento(s)</div></div>`;
+    html += '</div>';
+
+    html += '<div class="secao" style="border-top:none;">Identificação</div>';
+    html += tabelaPares([["Cliente", DADOS_FIXOS.cliente], ["Supervisora", DADOS_FIXOS.supervisora]]);
+
+    html += '<div class="secao">Recorte da lista</div>';
+    html += tabelaPares([
+      ["Local", recorte.obra || "Todos os locais"],
+      ["Situação", recorte.situacao || "Todas"],
+      ["Busca", recorte.busca || "—"],
+      ["Emitido em", dataBR(new Date().toISOString().slice(0,10))]
+    ]);
+
+    html += '<div class="secao">Equipamentos</div>';
+    html += '<table class="f"><tr><th>Nº</th><th>Equipamento</th><th>Certificado</th><th>Empresa</th>'
+          + '<th>Calibração</th><th>Validade</th><th>Próxima</th><th>Situação</th>'
+          + '<th>Onde está</th><th>Observações</th></tr>';
+    if(!pagina.length){
+      html += '<tr><td colspan="10" class="num">Nenhum equipamento neste filtro.</td></tr>';
+    }
+    pagina.forEach((e, k) => {
+      const st = situacaoEquip(e);
+      const destaque = st.chave === "vencido" ? ' style="font-weight:bold"' : "";
+      html += '<tr>'
+            + `<td class="num">${iPag*EQUIP_POR_PAGINA + k + 1}</td>`
+            + `<td>${esc(e.descricao)}</td>`
+            + `<td class="num">${esc(e.certificado) || "-"}</td>`
+            + `<td>${esc(e.empresa) || "-"}</td>`
+            + `<td class="num">${e.dataCalibracao ? dataBR(e.dataCalibracao) : "-"}</td>`
+            + `<td class="num">${VALIDADES[String(e.validadeMeses)] || "—"}</td>`
+            + `<td class="num">${e.proximaCalibracao ? dataBR(e.proximaCalibracao) : "-"}</td>`
+            + `<td class="num"${destaque}>${esc(st.curto)}</td>`
+            + `<td class="num">${esc(codigoObra(e.obra)) || "-"}</td>`
+            + `<td>${esc(e.obs) || ""}</td>`
+            + '</tr>';
+    });
+    html += '</table>';
+
+    /* o resumo e a assinatura só na última folha */
+    if(iPag === paginas.length - 1){
+      html += '<div class="secao">Resumo da calibração</div>';
+      html += tabelaPares([
+        ["Em dia", String(conta.ok)],
+        ["Vencem em até 30 dias", String(conta.vencendo)],
+        ["Vencidos", String(conta.vencido)],
+        ["Sem data de calibração", String(conta.sem)]
+      ]);
+      html += '<div class="norma"><p>A situação é apurada na data de emissão, comparando a próxima '
+            + 'calibração de cada equipamento com o dia de hoje. Equipamento vencido ou sem certificado '
+            + 'válido não deve ser utilizado em ensaio de controle tecnológico.</p></div>';
+      html += `<div class="assin"><img src="${ASSIN_B64}" alt="Assinatura do Chefe do Controle Tecnológico"></div>`;
+    }
+
+    html += '</div>';
+    html += `<div class="rodape">SGQ - Consórcio Solução DOR · Lote 08 · Supervisão GOINFRA — emitido em ${dataBR(new Date().toISOString().slice(0,10))}</div>`;
+    html += '</div>';
+    return html;
+  }).join("");
+}
+
+function imprimirEquipamentos(){
+  const lista = equipFiltrados().slice().sort((a,b) => {
+    const da = situacaoEquip(a).dias, db = situacaoEquip(b).dias;
+    if(da === null) return 1;
+    if(db === null) return -1;
+    return da - db;
+  });
+  if(!lista.length){ toast("Nenhum equipamento neste filtro."); return; }
+
+  const selSit = document.getElementById("eqFiltroSituacao");
+  const recorte = {
+    obra: document.getElementById("eqFiltroObra").value,
+    situacao: selSit.value ? selSit.options[selSit.selectedIndex].textContent : "",
+    busca: document.getElementById("eqBusca").value.trim()
+  };
+  document.getElementById("folhaImpressao").innerHTML = montarFolhasEquip(lista, recorte);
+
+  const nome = "SGQ_Equipamentos" +
+    (recorte.obra ? "_" + codigoObra(recorte.obra).replace(/[^A-Za-z0-9-]/g, "") : "") +
+    "_" + new Date().toISOString().slice(0,10) + ".pdf";
+
+  if(window.jspdf && window.jspdf.jsPDF && window.html2canvas) gerarPDFdaFolha(nome);
+  else setTimeout(()=>window.print(), 150);
+}
+
 function imprimirLista(lista){
   if(!lista.length){ toast("Nenhum registro para imprimir."); return; }
   document.getElementById("folhaImpressao").innerHTML = lista.map(montarFolha).join("");
@@ -3220,7 +3328,7 @@ function imprimirLista(lista){
      não abre a caixa de impressão — o botão simplesmente não fazia nada. Por isso
      o PDF é montado aqui dentro e baixado como arquivo, o que funciona igual no
      navegador, no app instalado e sem internet. */
-  if(window.jspdf && window.jspdf.jsPDF && window.html2canvas) gerarPDF(lista);
+  if(window.jspdf && window.jspdf.jsPDF && window.html2canvas) gerarPDFdaFolha(nomeDoPDF(lista));
   else setTimeout(()=>window.print(), 150);
 }
 
@@ -3235,7 +3343,7 @@ function nomeDoPDF(lista){
   return "SGQ_folhas_" + lista.length + "_" + new Date().toISOString().slice(0,10) + ".pdf";
 }
 
-async function gerarPDF(lista){
+async function gerarPDFdaFolha(nomeArquivo){
   const alvo = document.getElementById("folhaImpressao");
   const folhas = Array.from(alvo.querySelectorAll(".folha"));
   if(!folhas.length){ toast("Nada para gerar."); return; }
@@ -3273,7 +3381,7 @@ async function gerarPDF(lista){
       if(folhas.length > 1) toast(`Gerando PDF — ${i+1} de ${folhas.length}...`);
       await new Promise(r=>setTimeout(r, 10));   // devolve a vez para a tela não travar
     }
-    pdf.save(nomeDoPDF(lista));
+    pdf.save(nomeArquivo);
     toast(folhas.length > 1 ? `PDF com ${folhas.length} folhas salvo ✓` : "PDF salvo ✓");
   }catch(err){
     /* se algo falhar, ainda resta a impressão do navegador (funciona fora do app instalado) */
@@ -3811,6 +3919,29 @@ let equipMovendo  = null;   /* id do equipamento sendo movido de obra */
 
 const VALIDADES = { "6":"6 meses", "12":"1 ano", "24":"2 anos", "36":"3 anos", "60":"5 anos", "0":"—" };
 
+/* Onde um equipamento pode estar: nos locais fixos do consórcio ou em uma das obras.
+   Para criar um local novo, basta acrescentar aqui — o padrão "CÓDIGO — descrição"
+   faz a tabela e o PDF mostrarem só o código, que é curto. */
+const LOCAIS_FIXOS = [
+  "LAB. CENTRAL — Laboratório central",
+  "ESTOQUE — Escritório"
+];
+const LOCAL_ESTOQUE = LOCAIS_FIXOS[1];
+
+function popularLocaisEquip(sel){
+  if(!sel || sel.options.length > 1) return;      // já preenchido
+  LOCAIS_FIXOS.forEach(local=>{
+    const o = document.createElement("option");
+    o.value = local; o.textContent = local;
+    sel.appendChild(o);
+  });
+  [...document.querySelectorAll("#f_rodovia option")].forEach(o=>{
+    const n = document.createElement("option");
+    n.value = o.value; n.textContent = o.value;
+    sel.appendChild(n);
+  });
+}
+
 function carregarEquipamentos(){
   try{ equipamentos = JSON.parse(localStorage.getItem(EQUIP_KEY) || "[]"); }
   catch(e){ equipamentos = []; }
@@ -3850,7 +3981,7 @@ function abrirEquip(id){
   const e = id ? equipamentos.find(x => x.id === id) : null;
   const selObra = document.getElementById("eq_obra");
   selObra.innerHTML = "";
-  popularSelectRodovias(selObra);
+  popularLocaisEquip(selObra);
 
   document.getElementById("equipTitulo").textContent = e ? "Editar equipamento" : "Cadastrar equipamento";
   document.getElementById("eq_descricao").value   = e ? (e.descricao || "") : "";
@@ -4000,10 +4131,10 @@ function abrirMover(id){
   equipMovendo = id;
   const sel = document.getElementById("mv_obra");
   sel.innerHTML = "";
-  popularSelectRodovias(sel);
+  popularLocaisEquip(sel);
   sel.value = e.obra || "";
   document.getElementById("moverInfo").innerHTML =
-    "<b>" + esc(e.descricao) + "</b><br>Hoje está em: " + esc(e.obra || "obra não informada");
+    "<b>" + esc(e.descricao) + "</b><br>Hoje está em: " + esc(e.obra || "local não informado");
   document.getElementById("mv_data").value = hojeISO();
   document.getElementById("mv_quem").value = document.getElementById("f_operador").value || "";
   document.getElementById("mv_obs").value = "";
@@ -4041,7 +4172,7 @@ function verHistorico(id){
   const h = (e.historico || []).slice().reverse();
   document.getElementById("histLista").innerHTML =
     '<p class="hint" style="margin-bottom:12px;"><b>' + esc(e.descricao) + '</b><br>Está em: ' +
-    esc(e.obra || "obra não informada") + '</p>' +
+    esc(e.obra || "local não informado") + '</p>' +
     (h.length
       ? h.map(m => '<div class="histlinha"><b>' + esc(codigoObra(m.de) || "—") + ' → ' +
           esc(codigoObra(m.para)) + '</b>' +
@@ -4069,7 +4200,7 @@ function equipFiltrados(){
 }
 
 function renderEquipamentos(){
-  popularSelectRodovias(document.getElementById("eqFiltroObra"));
+  popularLocaisEquip(document.getElementById("eqFiltroObra"));
   const lista = equipFiltrados();
 
   /* indicadores sempre sobre o mesmo recorte da lista */
