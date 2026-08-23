@@ -823,6 +823,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   .pend b{display:block;margin-bottom:4px;color:var(--navy);}
   .pend ul{margin:5px 0 0;padding-left:17px;color:var(--text-2);line-height:1.55;}
   .tudocerto{color:var(--ok);font-size:13px;padding:8px 0;font-weight:700;}
+  .filtrodia{background:linear-gradient(100deg,#d8efee,#fff 75%);border:1px solid #9fd2d1;color:var(--navy);
+    font-size:13px;font-weight:600;padding:10px 14px;border-radius:10px;margin:0 0 14px;display:flex;
+    align-items:center;flex-wrap:wrap;gap:4px;}
   /* ===================== TELA DE ENTRADA ===================== */
   .entrada{
     position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
@@ -1144,6 +1147,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <button class="btn ghost" onclick="baixarDaPlanilha(true)">Atualizar da planilha</button>
       </div>
     </div>
+
+    <div id="calFiltroDiaAviso"></div>
 
     <div class="kpis" id="calKpis"></div>
 
@@ -3414,6 +3419,8 @@ const DOW = ["dom","seg","ter","qua","qui","sex","sáb"];
 
 let calRef = new Date();
 let calDiaSel = null;
+let calDiaFiltro = null;   /* dia clicado no calendário; quando setado, a página inteira (KPIs, conformidade,
+                              médias, pendências, comparativo) passa a mostrar só os lançamentos daquele dia */
 
 function hojeISO(){ const d=new Date(); return isoDe(d); }
 function isoDe(d){
@@ -3528,6 +3535,11 @@ function registrosDaRodovia(){ return registros.filter(filtroBase); }
 
 /* A base acima, recortada também no tempo. Usado só pelos indicadores. */
 function escopoAnalise(){
+  /* dia clicado no calendário manda mais que o filtro de Período — a análise
+     inteira passa a valer só para aquele dia, até o usuário limpar o filtro */
+  if(calDiaFiltro){
+    return registros.filter(r=>filtroBase(r) && dataDoRegistro(r)===calDiaFiltro);
+  }
   const per = valorFiltro("cal_periodo") || "tudo";
   const prefMes = `${calRef.getFullYear()}-${String(calRef.getMonth()+1).padStart(2,"0")}`;
   const limite = new Date(); limite.setDate(limite.getDate()-30);
@@ -3568,7 +3580,13 @@ function popularFiltrosAnalise(){
 
 /* ---------- CALENDÁRIO ---------- */
 function calMudarMes(d){ calRef = new Date(calRef.getFullYear(), calRef.getMonth()+d, 1); renderCalendario(); }
-function calSelecionarDia(iso){ calDiaSel = iso; renderCalendario(); }
+function calSelecionarDia(iso){
+  /* clicar no mesmo dia já filtrado desliga o filtro e volta pro recorte por período */
+  calDiaFiltro = (calDiaFiltro===iso) ? null : iso;
+  calDiaSel = iso;
+  renderCalendario();
+}
+function calLimparFiltroDia(){ calDiaFiltro = null; renderCalendario(); }
 
 function renderCalendario(){
   popularFiltrosAnalise();
@@ -3654,6 +3672,14 @@ function blocoBarras(titulo, lista){
 
 /* ---------- INDICADORES ---------- */
 function renderIndicadores(escopo){
+  const avisoDia = document.getElementById("calFiltroDiaAviso");
+  if(avisoDia){
+    avisoDia.innerHTML = calDiaFiltro
+      ? `<div class="filtrodia">Mostrando só o dia <b>${dataBR(calDiaFiltro)}</b> — KPIs, conformidade, médias,
+          pendências e comparativo abaixo valem apenas para esta data.
+          <button class="btn ghost" style="margin-left:8px;" onclick="calLimparFiltroDia()">Ver período completo</button></div>`
+      : "";
+  }
   /* KPIs */
   let conf=0, naoConf=0;
   const naoConformes=[];
@@ -3833,8 +3859,10 @@ function renderPendencias(escopo){
 /* ---------- COMPARATIVO ENTRE OBRAS ---------- */
 function renderObras(){
   const med = valorFiltro("cal_medicao"), tipo = valorFiltro("cal_tipo");
-  /* aqui o filtro de rodovia não se aplica: o quadro existe para comparar as obras */
-  const base = registros.filter(r=>(!med||r.medicao===med) && (!tipo||r.tipo===tipo));
+  /* aqui o filtro de rodovia não se aplica: o quadro existe para comparar as obras.
+     O filtro de dia (clique no calendário) se aplica sim — é a página inteira mudando de recorte. */
+  const base = registros.filter(r=>(!med||r.medicao===med) && (!tipo||r.tipo===tipo)
+    && (!calDiaFiltro || dataDoRegistro(r)===calDiaFiltro));
   const porObra={};
   base.forEach(r=>{
     const k=r.rodovia||"—";
