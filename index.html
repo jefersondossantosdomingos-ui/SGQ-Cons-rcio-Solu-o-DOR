@@ -1140,7 +1140,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             <option value="tudo">Toda a obra</option>
             <option value="mes">Mês exibido no calendário</option>
             <option value="30">Últimos 30 dias</option>
+            <option value="intervalo">Intervalo personalizado</option>
           </select>
+        </div>
+        <div>
+          <label>De</label>
+          <input type="date" id="cal_data_ini">
+        </div>
+        <div>
+          <label>Até</label>
+          <input type="date" id="cal_data_fim">
         </div>
       </div>
       <div class="actions">
@@ -3544,11 +3553,18 @@ function escopoAnalise(){
   const prefMes = `${calRef.getFullYear()}-${String(calRef.getMonth()+1).padStart(2,"0")}`;
   const limite = new Date(); limite.setDate(limite.getDate()-30);
   const isoLimite = isoDe(limite);
+  const dataIni = valorFiltro("cal_data_ini");   /* yyyy-mm-dd, comparável direto com dataDoRegistro */
+  const dataFim = valorFiltro("cal_data_fim");
   return registros.filter(r=>{
     if(!filtroBase(r)) return false;
     const d = dataDoRegistro(r);
     if(per==="mes" && d.slice(0,7)!==prefMes) return false;
     if(per==="30" && d < isoLimite) return false;
+    if(per==="intervalo"){
+      if(dataIni && d < dataIni) return false;
+      if(dataFim && d > dataFim) return false;
+      if(!dataIni && !dataFim) return false;   /* intervalo escolhido mas nenhuma data preenchida ainda: nada no recorte */
+    }
     return true;
   });
 }
@@ -3576,6 +3592,16 @@ function popularFiltrosAnalise(){
   }
   const selP = document.getElementById("cal_periodo");
   if(selP && !selP.dataset.lig){ selP.addEventListener("change", renderCalendario); selP.dataset.lig="1"; }
+  const dIni = document.getElementById("cal_data_ini");
+  const dFim = document.getElementById("cal_data_fim");
+  if(dIni && !dIni.dataset.lig){
+    dIni.addEventListener("change", ()=>{ if(selP) selP.value="intervalo"; calDiaFiltro=null; renderCalendario(); });
+    dIni.dataset.lig="1";
+  }
+  if(dFim && !dFim.dataset.lig){
+    dFim.addEventListener("change", ()=>{ if(selP) selP.value="intervalo"; calDiaFiltro=null; renderCalendario(); });
+    dFim.dataset.lig="1";
+  }
 }
 
 /* ---------- CALENDÁRIO ---------- */
