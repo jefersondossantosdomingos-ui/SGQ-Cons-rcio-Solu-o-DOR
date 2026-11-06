@@ -918,18 +918,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <h1>SGQ · SOLUÇÃO DOR</h1>
     <div class="sub">Sistema de Gestão da Qualidade<br>Lote 08 · Supervisão GOINFRA</div>
     <div class="campos">
-      <label>Login</label>
-      <input id="entradaUsuario" autocomplete="username" autocapitalize="characters"
-             autocorrect="off" spellcheck="false" placeholder="seu login">
-      <label>Senha</label>
-      <input id="entradaSenha" type="password" autocomplete="current-password"
-             autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="sua senha">
       <button class="btn" onclick="entrarNoApp()">Entrar</button>
-      <div class="erro" id="entradaErro">Login ou senha incorretos.</div>
     </div>
     <button class="btn instalar" id="btnInstalar" onclick="instalarApp()">Instalar no celular</button>
-    <div class="rodape">Acesso restrito à equipe do Consórcio Solução DOR — Lote 08.<br>
-      Peça seu login ao gestor da qualidade.</div>
+    <div class="rodape">Equipe do Consórcio Solução DOR — Lote 08.<br>
+      O acesso de gestor fica no botão do perfil, dentro do app.</div>
   </div>
 </div>
 
@@ -1816,26 +1809,16 @@ function autenticar(u, senha){
 /* ---------- porta de entrada ---------- */
 function abrirEntrada(){
   const tela = document.getElementById("telaEntrada");
-  document.getElementById("entradaSenha").value = "";
-  document.getElementById("entradaErro").classList.remove("show");
-  const ultimo = localStorage.getItem(ULTIMO_USUARIO_KEY) || "";
-  document.getElementById("entradaUsuario").value = ultimo;
   tela.classList.remove("oculta");
   document.body.classList.add("travado");
-  setTimeout(()=>document.getElementById(ultimo ? "entradaSenha" : "entradaUsuario").focus(), 80);
 }
 
+/* Entrada sem senha: abre como acesso comum. O gestor continua com login e senha (chip do perfil). */
 function entrarNoApp(){
-  const u = document.getElementById("entradaUsuario").value;
-  const senha = document.getElementById("entradaSenha").value;
-  const p = autenticar(u, senha);
-  if(!p){ document.getElementById("entradaErro").classList.add("show"); return; }
-  perfilAtual = p;
-  try{ localStorage.setItem(ULTIMO_USUARIO_KEY, String(u).trim().toUpperCase()); }catch(e){}
+  perfilAtual = null;
   document.getElementById("telaEntrada").classList.add("oculta");
   document.body.classList.remove("travado");
   aplicarPerfil();
-  toast(p === "gestor" ? "Acesso gestor liberado ✓" : "Bem-vindo(a) ✓");
 }
 
 /* Sair do gestor fecha a sessão e volta para a porta de entrada. */
